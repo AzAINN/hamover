@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends.build_meta"
+
+[project]
+name = "hamover"
+version = "0.1.0"
+description = "Continuous-time quantum search via Hamiltonian evolution"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+simulation = ["qutip>=5.0"]
+hardware = ["simuq", "dwave-ocean-sdk"]
+ionq = ["simuq", "amazon-braket-sdk"]
+quera = ["simuq", "bloqade"]
+optimization = ["jax", "jaxlib", "qhdopt", "cyipopt"]
+dev = ["pytest", "pytest-cov"]
+all = ["hamover[simulation,hardware,optimization,dev]"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["hamover*"]
