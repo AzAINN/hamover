@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "hamover"
+version: "0.1.0"
+abstract: >-
+  hamover is a continuous-time quantum search framework based on su(2)
+  Hamiltonian dynamics, with an embedding layer that maps reduced two-level
+  search dynamics to multi-qubit Hamiltonians, a SimuQ-compatible compilation
+  interface, and backend pathways for local and hardware-aligned execution.
+authors:
+  - family-names: "Khalid"
+    given-names: "Azain"
+repository-code: "https://github.com/AzAINN/hamover"
+url: "https://github.com/AzAINN/hamover"
+license: "Apache-2.0"
+keywords:
+  - "quantum search"
+  - "continuous-time quantum computing"
+  - "Hamiltonian embedding"
+  - "SimuQ"
+  - "su(2)"
+  - "adiabatic search"
+  - "analog quantum algorithms"
