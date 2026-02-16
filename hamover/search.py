@@ -13,6 +13,7 @@ from hamover.simuq_interface import build_simuq_system, validate_simuq_system
 from hamover.backends import (
     compile_ionq_program,
     compile_quera_program,
+    run_classiq_search,
     run_simulated_annealing,
     simulate_embedded,
 )
@@ -128,9 +129,11 @@ class HamoverSearch:
                     }
                 )
                 if sa.bitstrings:
-                    bitstring = Counter(sa.bitstrings).most_common(1)[0][0]
-                    selected_index = int(bitstring, 2)
-                    target_found = selected_index == self.problem.target_index
+                    valid = [bs for bs in sa.bitstrings if embedding.decode(bs) != "leakage"]
+                    if valid:
+                        bitstring = Counter(valid).most_common(1)[0][0]
+                        selected_index = int(bitstring, 2)
+                        target_found = selected_index == self.problem.target_index
             elif backend == "qutip":
                 sim = simulate_embedded(
                     embedding=embedding,
@@ -161,9 +164,37 @@ class HamoverSearch:
                     n_points=max(2, n_segments),
                 )
                 diagnostics["quera_points"] = len(prog.t)
+            elif backend == "classiq":
+                cq = run_classiq_search(
+                    embedding=embedding,
+                    omega_func=su2.omega,
+                    Omega_func=su2.Omega,
+                    x=x,
+                    T=runtime,
+                    n_segments=n_segments,
+                    num_qdrift=int(opts.get("num_qdrift", 20)),
+                    shots=int(opts.get("shots", 1000)),
+                )
+                result_probability = float(cq.success_probability)
+                diagnostics.update(
+                    {
+                        "backend_found_count": int(cq.found_count),
+                        "backend_not_found_count": int(cq.not_found_count),
+                        "backend_leakage_count": int(cq.leakage_count),
+                        "circuit_depth": int(cq.circuit_depth),
+                        "cx_count": int(cq.cx_count),
+                        "num_qdrift": int(cq.num_qdrift),
+                    }
+                )
+                if cq.bitstrings:
+                    valid = [bs for bs in cq.bitstrings if embedding.decode(bs) != "leakage"]
+                    if valid:
+                        bitstring = Counter(valid).most_common(1)[0][0]
+                        selected_index = int(bitstring, 2)
+                        target_found = selected_index == self.problem.target_index
             else:
                 raise ValueError(
-                    f"Unknown backend '{backend}'. Use one of: none, qutip, sim_annealing, dwave, ionq, quera."
+                    f"Unknown backend '{backend}'. Use one of: none, qutip, sim_annealing, dwave, ionq, quera, classiq."
                 )
 
         if selected_index is None and result_probability >= 0.5:
