@@ -74,7 +74,10 @@ class HamoverSearch:
         target_found = p_ref >= 0.5
 
         if backend != "none":
-            penalty_strength = float(opts.get("penalty_strength", auto_penalty(su2.to_su2(), runtime)))
+            # For gate-based Classiq simulation, a large leakage penalty inflates
+            # Hamiltonian norm and can severely degrade qDRIFT/Trotter accuracy.
+            default_penalty = 0.0 if backend == "classiq" else auto_penalty(su2.to_su2(), runtime)
+            penalty_strength = float(opts.get("penalty_strength", default_penalty))
             embedding = encode_search(
                 N=self.problem.N,
                 target_index=self.problem.target_index,
@@ -165,6 +168,7 @@ class HamoverSearch:
                 )
                 diagnostics["quera_points"] = len(prog.t)
             elif backend == "classiq":
+                sim_method = str(opts.get("hamiltonian_simulation", "qdrift")).lower().strip()
                 cq = run_classiq_search(
                     embedding=embedding,
                     omega_func=su2.omega,
@@ -172,20 +176,31 @@ class HamoverSearch:
                     x=x,
                     T=runtime,
                     n_segments=n_segments,
+                    simulation_method=sim_method,
                     num_qdrift=int(opts.get("num_qdrift", 20)),
+                    trotter_order=int(opts.get("trotter_order", 2)),
+                    trotter_reps=int(opts.get("trotter_reps", 10)),
                     shots=int(opts.get("shots", 1000)),
                 )
                 result_probability = float(cq.success_probability)
-                diagnostics.update(
-                    {
-                        "backend_found_count": int(cq.found_count),
-                        "backend_not_found_count": int(cq.not_found_count),
-                        "backend_leakage_count": int(cq.leakage_count),
-                        "circuit_depth": int(cq.circuit_depth),
-                        "cx_count": int(cq.cx_count),
-                        "num_qdrift": int(cq.num_qdrift),
-                    }
-                )
+                classiq_diag = {
+                    "backend_found_count": int(cq.found_count),
+                    "backend_not_found_count": int(cq.not_found_count),
+                    "backend_leakage_count": int(cq.leakage_count),
+                    "circuit_depth": int(cq.circuit_depth),
+                    "cx_count": int(cq.cx_count),
+                    "simulation_method": cq.simulation_method,
+                    "method_params": cq.method_params,
+                }
+                # Backward-compatible flattened fields used in notebook diagnostics.
+                if cq.simulation_method == "qdrift" and "num_qdrift" in cq.method_params:
+                    classiq_diag["num_qdrift"] = int(cq.method_params["num_qdrift"])
+                if cq.simulation_method == "suzuki_trotter":
+                    if "trotter_order" in cq.method_params:
+                        classiq_diag["trotter_order"] = int(cq.method_params["trotter_order"])
+                    if "trotter_reps" in cq.method_params:
+                        classiq_diag["trotter_reps"] = int(cq.method_params["trotter_reps"])
+                diagnostics.update(classiq_diag)
                 if cq.bitstrings:
                     valid = [bs for bs in cq.bitstrings if embedding.decode(bs) != "leakage"]
                     if valid:
