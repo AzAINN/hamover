@@ -7,7 +7,7 @@ name = "hamover"
 version = "0.1.0"
 description = "Continuous-time quantum search via Hamiltonian evolution"
 requires-python = ">=3.10"
-license = "MIT"
+license = "Apache-2.0"
 dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
@@ -18,10 +18,17 @@ simulation = ["qutip>=5.0"]
 hardware = ["simuq", "dwave-ocean-sdk"]
 ionq = ["simuq", "amazon-braket-sdk"]
 quera = ["simuq", "bloqade"]
+classiq = ["classiq"]
 optimization = ["jax", "jaxlib", "qhdopt", "cyipopt"]
 dev = ["pytest", "pytest-cov"]
-all = ["hamover[simulation,hardware,optimization,dev]"]
+all = ["hamover[simulation,hardware,classiq,optimization,dev]"]
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["hamover*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests that require longer or external backend runs",
+]
