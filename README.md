@@ -2,6 +2,8 @@
 
 `hamover` is a continuous-time quantum search library based on Hamiltonian evolution.
 
+`[Note: Under Development]`
+
 Use one API for all flows:
 
 ```python
